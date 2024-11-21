@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Diff Analyzer</title>
+    <style>
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .diff-container {
+            margin-bottom: 20px;
+            padding: 10px;
+            border: 1px solid #ccc;
+        }
+        .filename {
+            width: 300px;
+            margin-bottom: 10px;
+            padding: 5px;
+        }
+        .diff-content {
+            width: 100%;
+            height: 200px;
+            font-family: monospace;
+            margin-bottom: 10px;
+            padding: 5px;
+        }
+        .prompt {
+            width: 100%;
+            height: 100px;
+            margin-bottom: 20px;
+            padding: 5px;
+        }
+        button {
+            padding: 10px 20px;
+            margin: 5px;
+            cursor: pointer;
+        }
+        #response {
+            margin-top: 20px;
+            border: 1px solid #ccc;
+            padding: 10px;
+            display: none;
+        }
+        .response-line {
+            display: flex;
+            padding: 5px;
+            border-bottom: 1px solid #eee;
+        }
+        .line-number {
+            flex: 0 0 50px;
+            color: #666;
+            font-family: monospace;
+        }
+        .line-content {
+            flex: 1;
+            white-space: pre-wrap;
+            font-family: monospace;
+        }
+        .loading {
+            display: none;
+            color: #666;
+            margin: 10px 0;
+        }
+        .error {
+            color: red;
+            margin: 10px 0;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <h1>Diff Analyzer</h1>
+    
+    <div id="diffs"></div>
+    
+    <button onclick="addDiffInput()">Add Another Diff</button>
+    
+    <div style="margin-top: 20px; margin-bottom: 20px;">
+        <label style="display: flex; align-items: center; gap: 8px;">
+            <input type="checkbox" id="accessibilityMode" onchange="toggleMode()">
+            <span>Accessibility Analysis Mode</span>
+        </label>
+        <div id="modeDescription" style="margin-top: 5px; color: #666; font-size: 0.9em;">
+            Regular analysis mode. Toggle for accessibility-focused review.
+        </div>
+    </div>
+
+    <div style="margin-top: 20px;">
+        <label for="prompt">Your question or prompt:</label><br>
+        <textarea id="prompt" class="prompt" placeholder="What would you like to know about these changes?"></textarea>
+    </div>
+    
+    <button onclick="analyzeDiffs()">Analyze Diffs</button>
+    
+    <div id="loading" class="loading">Analyzing...</div>
+    <div id="error" class="error"></div>
+    <div id="response"></div>
+
+    <script>
+        function addDiffInput() {
+            const container = document.createElement('div');
+            container.className = 'diff-container';
+            
+            const filename = document.createElement('input');
+            filename.type = 'text';
+            filename.className = 'filename';
+            filename.placeholder = 'Filename (e.g., src/main.js)';
+            
+            const content = document.createElement('textarea');
+            content.className = 'diff-content';
+            content.placeholder = 'Paste diff content here...';
+            
+            const removeButton = document.createElement('button');
+            removeButton.textContent = 'Remove';
+            removeButton.onclick = () => {
+                if (document.querySelectorAll('.diff-container').length > 1) {
+                    container.remove();
+                }
+            };
+            
+            container.appendChild(filename);
+            container.appendChild(document.createElement('br'));
+            container.appendChild(content);
+            container.appendChild(document.createElement('br'));
+            container.appendChild(removeButton);
+            
+            document.getElementById('diffs').appendChild(container);
+        }
+
+        function toggleMode() {
+            const checkbox = document.getElementById('accessibilityMode');
+            const description = document.getElementById('modeDescription');
+            const promptArea = document.getElementById('prompt');
+            
+            if (checkbox.checked) {
+                description.textContent = 'Accessibility analysis mode: Reviewing changes for ARIA attributes, semantic HTML, keyboard navigation, and screen reader compatibility.';
+                promptArea.placeholder = 'Add any specific accessibility concerns or questions...';
+            } else {
+                description.textContent = 'Regular analysis mode. Toggle for accessibility-focused review.';
+                promptArea.placeholder = 'What would you like to know about these changes?';
+            }
+        }
+
+        function analyzeDiffs() {
+            const diffContainers = document.querySelectorAll('.diff-container');
+            const patches = Array.from(diffContainers).map(container => ({
+                filename: container.querySelector('.filename').value,
+                content: container.querySelector('.diff-content').value
+            }));
+            
+            const prompt = document.getElementById('prompt').value;
+            const isAccessibilityMode = document.getElementById('accessibilityMode').checked;
+            
+            document.getElementById('loading').style.display = 'block';
+            document.getElementById('error').style.display = 'none';
+            document.getElementById('response').style.display = 'none';
+
+            const endpoint = isAccessibilityMode ? 
+                'http://localhost:3000/analyze-patches/accessibility' : 
+                'http://localhost:3000/analyze-patches';
+            
+            fetch(endpoint, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ 
+                    patches, 
+                    prompt,
+                    endpoint: isAccessibilityMode ? 'accessibility' : 'regular'
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    displayResponse(data.response);
+                } else {
+                    throw new Error(data.error || 'Failed to analyze diffs');
+                }
+            })
+            .catch(error => {
+                document.getElementById('error').textContent = error.message;
+                document.getElementById('error').style.display = 'block';
+            })
+            .finally(() => {
+                document.getElementById('loading').style.display = 'none';
+            });
+        }
+
+        function displayResponse(response) {
+            const responseDiv = document.getElementById('response');
+            responseDiv.innerHTML = '';
+            
+            response.forEach(line => {
+                const lineDiv = document.createElement('div');
+                lineDiv.className = 'response-line';
+                
+                const numberSpan = document.createElement('span');
+                numberSpan.className = 'line-number';
+                numberSpan.textContent = line.lineNumber;
+                
+                const contentSpan = document.createElement('span');
+                contentSpan.className = 'line-content';
+                contentSpan.textContent = line.content;
+                
+                lineDiv.appendChild(numberSpan);
+                lineDiv.appendChild(contentSpan);
+                responseDiv.appendChild(lineDiv);
+            });
+            
+            responseDiv.style.display = 'block';
+        }
+
+        // Add initial diff input
+        addDiffInput();
+    </script>
+</body>
+</html>

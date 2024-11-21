@@ -1,0 +1,22 @@
+{
+  "name": "a11y-code-review",
+  "version": "1.0.0",
+  "description": "",
+  "main": "server.js",
+  "type": "module",
+  "scripts": {
+    "start": "node server.js",
+    "dev:backend": "node --watch server.js",
+    "dev:frontend": "http-server"
+  },
+  "keywords": [],
+  "author": "Andri Alexandrou <andri.j.alexandrou@gmail.com>",
+  "license": "ISC",
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.32.1",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.21.1",
+    "http-server": "^14.1.1"
+  }
+}
