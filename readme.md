@@ -1,5 +1,14 @@
 # Agent-Assisted Accessibility Code Review
 
+This simple site is intended to test whether a sufficiently opinionated prompt can adequately catch accessibility violations.
+
+
+Here's a video without audio demonstrating mostly the interface behavior, in which a user can paste any git diff (or multiple in the same text box), submit, and receive after about 30 seconds a naive git diff interface where general comments are provided, as well as line-specific comments and suggestions. The suggestions include click-only functionality, un-labelled inputs, and errors that are not programmatically linked to their form field.
+
+https://github.com/user-attachments/assets/e5d3ffbe-1359-4770-a68e-3ea630a74cde
+
+
+
 ## Environment
 
 ```env
