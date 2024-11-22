@@ -386,7 +386,7 @@ diff --git a/src/Button.js b/src/Button.js
                         
                         // Get text after the review data tag
                         endSummary = analysisResponse.substring(reviewMatch.index + reviewMatch[0].length).trim();
-                        
+                        console.log('reviewMatch:', reviewMatch);
                         // Parse the JSON from inside the tag
                         try {
                             analysisArray = JSON.parse(reviewMatch[1]);
