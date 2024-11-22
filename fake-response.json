@@ -1,322 +1,43 @@
+Here are the accessibility issues I identified in the provided code changes:
+
+Explanation:
+1. The SubmitButton component uses CSS opacity and pointerEvents to visually disable the button when loading. This makes the button appear non-interactive to sighted users, but it's still focusable and operable via keyboard or screen reader, failing WCAG 2.1.1 Keyboard.
+
+2. The Modal component is not trapping keyboard focus within the modal when open. Users can tab out of the modal and interact with background content, which can be confusing and disorienting, especially for screen reader users. This fails WCAG 2.1.2 No Keyboard Trap.
+
+3. The close button in the Modal uses a span element, which is not natively focusable or interactive. It needs a proper button role and keyboard event handling to be accessible.
+
+4. The ContactForm has inputs without associated labels. Placeholder text is not an acceptable replacement for a label, as it disappears when the user starts typing and is not reliably announced by screen readers. This fails WCAG 1.3.1 Info and Relationships and 3.3.2 Labels or Instructions.
+
+5. The name input error message is always present in the DOM, just hidden with display: none. This makes it invisible but still announced by screen readers, which is confusing. Error messages should only be present when relevant.
+
+6. The name input error message is not associated with the input itself. Screen reader users may not understand which input the error refers to. This fails WCAG 4.1.3 Status Messages.
+
+Suggested fixes:
+
 [
   {
-    "lineNumber": 1,
-    "content": "Here are the accessibility issues I identified in the provided code changes:"
+    "location": "src/DisabledButton.jsx:3",
+    "content": "Using CSS opacity and pointerEvents to visually disable a button is problematic. It makes the button appear non-interactive to sighted users, but it's still focusable and operable via keyboard or screen reader. This fails WCAG 2.1.1 Keyboard. To fix, add the disabled attribute to truly disable the button: <button type=\"submit\" disabled={isLoading}>{isLoading ? 'Loading...' : 'Submit'}</button>."
   },
   {
-    "lineNumber": 2,
-    "content": ""
+    "location": "src/Modal.jsx:5",
+    "content": "The Modal component should trap keyboard focus when open, to prevent users from navigating to background content. Wrap the modal content in a div with tabIndex={-1} and use the autoFocus attribute to move focus into the modal when it opens. Also add a keyboard event listener to trap focus inside the modal: <div tabIndex={-1} autoFocus onKeyDown={handleKeyDown}>...</div>."
   },
   {
-    "lineNumber": 3,
-    "content": "1. DisabledButton.jsx"
+    "location": "src/Modal.jsx:16",
+    "content": "Replace the modal close span with a proper button element, which is natively focusable and operable with keyboard: <button type=\"button\" onClick={() => isOpen(false)}>×</button>. Position the button with CSS instead of the span."
   },
   {
-    "lineNumber": 4,
-    "content": "Issue: Using opacity and pointerEvents to visually disable the button."
+    "location": "src/Form.jsx:5",
+    "content": "Add a label element associated with the name input, either by wrapping the input or using the htmlFor attribute. The label should remain visible at all times. For example: <label htmlFor=\"name\">Name</label><input type=\"text\" id=\"name\" />."
   },
   {
-    "lineNumber": 5,
-    "content": "Why it's a problem: "
+    "location": "src/Form.jsx:8",
+    "content": "Only render the name input error if there is an actual error, for example using conditional rendering: {nameError && <div style={{ color: 'red' }}>Name is required</div>}. This prevents screen readers from announcing the error prematurely."
   },
   {
-    "lineNumber": 6,
-    "content": "- The button is still focusable and operable by keyboard, which can confuse users."
-  },
-  {
-    "lineNumber": 7,
-    "content": "- Assistive technologies may not convey the button is disabled."
-  },
-  {
-    "lineNumber": 8,
-    "content": "Who it affects: Keyboard users, screen reader users"
-  },
-  {
-    "lineNumber": 9,
-    "content": "Suggested fix:"
-  },
-  {
-    "lineNumber": 10,
-    "content": "```jsx"
-  },
-  {
-    "lineNumber": 11,
-    "content": "<button "
-  },
-  {
-    "lineNumber": 12,
-    "content": "  type=\"submit\" "
-  },
-  {
-    "lineNumber": 13,
-    "content": "  disabled={isLoading}"
-  },
-  {
-    "lineNumber": 14,
-    "content": "  aria-disabled={isLoading}"
-  },
-  {
-    "lineNumber": 15,
-    "content": ">"
-  },
-  {
-    "lineNumber": 16,
-    "content": "  {isLoading ? 'Loading...' : 'Submit'}"
-  },
-  {
-    "lineNumber": 17,
-    "content": "</button>"
-  },
-  {
-    "lineNumber": 18,
-    "content": "```"
-  },
-  {
-    "lineNumber": 19,
-    "content": "Use the native `disabled` attribute to properly disable the button. Add `aria-disabled` for ARIA support."
-  },
-  {
-    "lineNumber": 20,
-    "content": "WCAG criteria: 2.1.1 Keyboard, 4.1.2 Name, Role, Value"
-  },
-  {
-    "lineNumber": 21,
-    "content": ""
-  },
-  {
-    "lineNumber": 22,
-    "content": "2. Modal.jsx "
-  },
-  {
-    "lineNumber": 23,
-    "content": "Issue: Improper focus management and keyboard accessibility in the modal dialog."
-  },
-  {
-    "lineNumber": 24,
-    "content": "Why it's a problem:"
-  },
-  {
-    "lineNumber": 25,
-    "content": "- Focus is not trapped within the modal when opened, allowing users to tab to background content."
-  },
-  {
-    "lineNumber": 26,
-    "content": "- No keyboard way to close the modal (e.g. Esc key)."
-  },
-  {
-    "lineNumber": 27,
-    "content": "- Close button is not keyboard accessible (no tab focus)."
-  },
-  {
-    "lineNumber": 28,
-    "content": "Who it affects: Keyboard users, screen reader users"
-  },
-  {
-    "lineNumber": 29,
-    "content": "Suggested fix:"
-  },
-  {
-    "lineNumber": 30,
-    "content": "```jsx"
-  },
-  {
-    "lineNumber": 31,
-    "content": "<div "
-  },
-  {
-    "lineNumber": 32,
-    "content": "  role=\"dialog\""
-  },
-  {
-    "lineNumber": 33,
-    "content": "  aria-modal=\"true\""
-  },
-  {
-    "lineNumber": 34,
-    "content": "  tabIndex=\"-1\""
-  },
-  {
-    "lineNumber": 35,
-    "content": "  aria-labelledby=\"modal-heading\""
-  },
-  {
-    "lineNumber": 36,
-    "content": ">"
-  },
-  {
-    "lineNumber": 37,
-    "content": "  <h2 id=\"modal-heading\">Modal Title</h2>"
-  },
-  {
-    "lineNumber": 38,
-    "content": "  {children}"
-  },
-  {
-    "lineNumber": 39,
-    "content": "  <button type=\"button\" aria-label=\"Close modal\" onClick={closeModal}>"
-  },
-  {
-    "lineNumber": 40,
-    "content": "    <span aria-hidden=\"true\">×</span>"
-  },
-  {
-    "lineNumber": 41,
-    "content": "  </button>"
-  },
-  {
-    "lineNumber": 42,
-    "content": "</div>"
-  },
-  {
-    "lineNumber": 43,
-    "content": "```"
-  },
-  {
-    "lineNumber": 44,
-    "content": "- Add `role=\"dialog\"` and `aria-modal=\"true\"` to identify it as a modal to assistive tech"
-  },
-  {
-    "lineNumber": 45,
-    "content": "- Add `tabIndex=\"-1\"` and focus the modal on open to set initial focus"
-  },
-  {
-    "lineNumber": 46,
-    "content": "- Provide an accessible name via `aria-labelledby` "
-  },
-  {
-    "lineNumber": 47,
-    "content": "- Make close button keyboard accessible and add `aria-label`"
-  },
-  {
-    "lineNumber": 48,
-    "content": "- Implement focus trap to keep focus within modal while open"
-  },
-  {
-    "lineNumber": 49,
-    "content": "WCAG criteria: 2.1.2 No Keyboard Trap, 2.4.3 Focus Order, 4.1.2 Name, Role, Value"
-  },
-  {
-    "lineNumber": 50,
-    "content": ""
-  },
-  {
-    "lineNumber": 51,
-    "content": "3. Form.jsx"
-  },
-  {
-    "lineNumber": 52,
-    "content": "Issue: Inputs are missing associated labels.  No programmatic error handling."
-  },
-  {
-    "lineNumber": 53,
-    "content": "Why it's a problem: "
-  },
-  {
-    "lineNumber": 54,
-    "content": "- Inputs without labels make it hard for screen reader users to understand their purpose."
-  },
-  {
-    "lineNumber": 55,
-    "content": "- Placeholder text is not a substitute for labels."
-  },
-  {
-    "lineNumber": 56,
-    "content": "- Hiding error message with `display:none` makes it inaccessible to assistive tech."
-  },
-  {
-    "lineNumber": 57,
-    "content": "Who it affects: Screen reader users, people with cognitive disabilities"
-  },
-  {
-    "lineNumber": 58,
-    "content": "Suggested fix:"
-  },
-  {
-    "lineNumber": 59,
-    "content": "```jsx"
-  },
-  {
-    "lineNumber": 60,
-    "content": "<div>"
-  },
-  {
-    "lineNumber": 61,
-    "content": "  <label htmlFor=\"name\">Name</label>"
-  },
-  {
-    "lineNumber": 62,
-    "content": "  <input type=\"text\" id=\"name\" aria-required=\"true\" aria-invalid=\"true\" aria-describedby=\"nameError\" />"
-  },
-  {
-    "lineNumber": 63,
-    "content": "  <div role=\"alert\" id=\"nameError\">"
-  },
-  {
-    "lineNumber": 64,
-    "content": "    Name is required"
-  },
-  {
-    "lineNumber": 65,
-    "content": "  </div>  "
-  },
-  {
-    "lineNumber": 66,
-    "content": "</div>"
-  },
-  {
-    "lineNumber": 67,
-    "content": "```"
-  },
-  {
-    "lineNumber": 68,
-    "content": "- Add visible `<label>` elements with `htmlFor` attribute matching input `id`"
-  },
-  {
-    "lineNumber": 69,
-    "content": "- Use `aria-required` to indicate required fields"
-  },
-  {
-    "lineNumber": 70,
-    "content": "- Use `aria-invalid` and `aria-describedby` to associate error message  "
-  },
-  {
-    "lineNumber": 71,
-    "content": "- Error message uses `role=\"alert\"` to be announced by assistive tech"
-  },
-  {
-    "lineNumber": 72,
-    "content": "WCAG criteria: 1.3.1 Info and Relationships, 3.3.1 Error Identification, 3.3.2 Labels or Instructions, 4.1.2 Name, Role, Value"
-  },
-  {
-    "lineNumber": 73,
-    "content": ""
-  },
-  {
-    "lineNumber": 74,
-    "content": "In summary, the key issues are:"
-  },
-  {
-    "lineNumber": 75,
-    "content": "- Lack of keyboard accessibility and focus management "
-  },
-  {
-    "lineNumber": 76,
-    "content": "- Missing semantic structure with ARIA to convey meaning"
-  },
-  {
-    "lineNumber": 77,
-    "content": "- No proper labeling and programmatic associations"
-  },
-  {
-    "lineNumber": 78,
-    "content": "- Inaccessible error handling"
-  },
-  {
-    "lineNumber": 79,
-    "content": ""
-  },
-  {
-    "lineNumber": 80,
-    "content": "Please let me know if you need any clarification or have additional code to review!"
+    "location": "src/Form.jsx:9",
+    "content": "Associate the name input error with the input itself, so screen reader users understand which input the error refers to. Use aria-describedby to link the error to the input: <input aria-describedby=\"nameError\" />, and add an id to the error div: <div id=\"nameError\">...</div>."
   }
 ]

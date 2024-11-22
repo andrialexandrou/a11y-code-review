@@ -7,20 +7,12 @@
     <style>
         body {
             font-family: system-ui, -apple-system, sans-serif;
-            /* max-width: 1400px;
-            margin: 0 auto; */
             padding: 20px;
         }
         .diff-content {
             width: 100%;
             height: 300px;
             font-family: monospace;
-            margin-bottom: 20px;
-            padding: 10px;
-        }
-        .prompt {
-            width: 100%;
-            height: 100px;
             margin-bottom: 20px;
             padding: 10px;
         }
@@ -90,9 +82,7 @@
             white-space: pre;
             padding: 2px 4px;
         }
-        .code-line-content {
-            margin-left: 10px;
-        }
+
         .line-addition {
             background: #e6ffed;
             color: #000;
@@ -116,20 +106,98 @@
             background: #f8f8f8;
             border-radius: 4px;
         }
+        .summary-box {
+            margin: 20px 0;
+            padding: 15px;
+            background: #f8f8f8;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            white-space: pre-wrap;
+        }
+        
+        .code-line-row {
+            display: flex;
+            width: 100%;
+        }
+
+        .code-line {
+            display: flex;
+            font-family: monospace;
+            font-size: 14px;
+            line-height: 1.5;
+            white-space: pre;
+            padding: 2px 4px;
+        }
+
+        .line-number {
+            padding: 0 8px;
+            text-align: right;
+            color: #999;
+            min-width: 40px;
+            user-select: none;
+            border-right: 1px solid #eee;
+        }
+
+        .code-line-content {
+            margin-left: 10px;
+        }
+        
+        .code-with-line-num {
+            flex: 1;
+            display: flex;
+        }
+        
+        .line-message {
+            flex: 1;
+            padding: 2px 8px;
+            border-left: 1px solid #eee;
+            font-size: 13px;
+            white-space: normal;
+            background: #fff;
+        }
+
+        .results-container {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            width: 100%;
+        }
+
+        .side-by-side {
+            display: flex;
+            width: 100%;
+        }
+
+        .code-panel {
+            width: 100%;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            background: #f8f8f8;
+        }
+
+        .has-message {
+            background: #ffffd7;
+        }
+        .diff-header, .chunk-header {
+            padding: 4px 8px;
+            color: #666;
+            font-family: monospace;
+            background-color: #f0f0f0;
+            white-space: pre;
+        }
+
+        .line-number {
+            padding: 0 8px;
+            text-align: right;
+            color: #999;
+            min-width: 40px;
+            user-select: none;
+            border-right: 1px solid #eee;
+        }
     </style>
 </head>
 <body>
-    <h1>Diff Analyzer</h1>
-    
-    <div class="mode-toggle">
-        <label style="display: flex; align-items: center; gap: 8px;">
-            <input type="checkbox" id="accessibilityMode" onchange="toggleMode()">
-            <span>Accessibility Analysis Mode</span>
-        </label>
-        <div id="modeDescription" class="mode-description">
-            Regular analysis mode. Toggle for accessibility-focused review.
-        </div>
-    </div>
+    <h1>Accessibility Diff Analyzer</h1>
 
     <div>
         <label for="diffContent">Paste your diffs here:</label><br>
@@ -143,53 +211,13 @@ diff --git a/src/Button.js b/src/Button.js
 +<button onClick={click}>Button</button>"></textarea>
     </div>
     
-    <div>
-        <label for="prompt">Your question or prompt:</label><br>
-        <textarea id="prompt" class="prompt" placeholder="What would you like to know about these changes?"></textarea>
-    </div>
-    
     <button onclick="analyzeDiffs()">Analyze Diffs</button>
     
     <div id="loading" class="loading">Analyzing...</div>
     <div id="error" class="error"></div>
     <div id="results" class="side-by-side"></div>
 
-    <div style="margin-top: 20px;">
-        <details>
-            <summary style="cursor: pointer; padding: 10px; background: #f5f5f5; border-radius: 4px;">
-                Debug Logs
-            </summary>
-            <div id="debugLog" style="
-                margin-top: 10px;
-                padding: 10px;
-                background: #f8f8f8;
-                border: 1px solid #ddd;
-                border-radius: 4px;
-                font-family: monospace;
-                font-size: 12px;
-                max-height: 300px;
-                overflow-y: auto;
-            "></div>
-        </details>
-    </div>
-
     <script>
-        function log(message, data) {
-            const timestamp = new Date().toISOString();
-            console.log(`[${timestamp}] ${message}`, data || '');
-            
-            const debugLog = document.getElementById('debugLog');
-            if (debugLog) {
-                const logLine = document.createElement('div');
-                logLine.textContent = `${timestamp} ${message} ${data ? JSON.stringify(data) : ''}`;
-                debugLog.prepend(logLine);
-                
-                while (debugLog.children.length > 50) {
-                    debugLog.removeChild(debugLog.lastChild);
-                }
-            }
-        }
-
         function parseDiffs(diffText) {
             const diffs = diffText.split(/(?=diff --git)/);
             
@@ -208,63 +236,47 @@ diff --git a/src/Button.js b/src/Button.js
                 .filter(Boolean);
         }
 
-        function toggleMode() {
-            const checkbox = document.getElementById('accessibilityMode');
-            const description = document.getElementById('modeDescription');
-            const promptArea = document.getElementById('prompt');
-            
-            if (checkbox.checked) {
-                description.textContent = 'Accessibility analysis mode: Reviewing changes for ARIA attributes, semantic HTML, keyboard navigation, and screen reader compatibility.';
-                promptArea.placeholder = 'Add any specific accessibility concerns or questions...';
-            } else {
-                description.textContent = 'Regular analysis mode. Toggle for accessibility-focused review.';
-                promptArea.placeholder = 'What would you like to know about these changes?';
-            }
-        }
-
         function analyzeDiffs() {
-            log('Starting diff analysis');
+            console.log('Starting diff analysis');
             const diffText = document.getElementById('diffContent').value;
-            log('Raw diff text length:', diffText.length);
+            console.log('Raw diff text length:', diffText.length);
             
             const patches = parseDiffs(diffText);
-            log('Parsed patches:', patches.map(p => ({
+            console.log('Parsed patches:', patches.map(p => ({
                 filename: p.filename,
                 contentLength: p.content.length
             })));
             
             if (!patches.length) {
                 const error = 'No valid diffs found. Please check the format.';
-                log('Error:', error);
+                console.log('Error:', error);
                 document.getElementById('error').textContent = error;
                 document.getElementById('error').style.display = 'block';
                 return;
             }
 
-            const prompt = document.getElementById('prompt').value;
-            const isAccessibilityMode = document.getElementById('accessibilityMode').checked;
-            
             document.getElementById('loading').style.display = 'block';
             document.getElementById('error').style.display = 'none';
 
-            const endpoint = isAccessibilityMode ? 
-                'http://localhost:3000/analyze-patches/accessibility' : 
-                'http://localhost:3000/analyze-patches';
+            const endpoint = 'http://localhost:3000/analyze-patches/accessibility';
 
-            log('Making request to endpoint:', endpoint);
+            console.log('Making request to endpoint:', endpoint);
             fetch(endpoint, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({ patches, prompt })
+                body: JSON.stringify({ 
+                    patches,
+                    maxTokens: 4096 // Add this to limit the response size
+                })
             })
             .then(response => {
-                log('Received response with status:', response.status);
+                console.log('Received response with status:', response.status);
                 return response.json();
             })
             .then(data => {
-                log('Received data:', {
+                console.log('Received data:', {
                     success: data.success,
                     responseLines: data.response?.length,
                     error: data.error
@@ -276,94 +288,235 @@ diff --git a/src/Button.js b/src/Button.js
                 }
             })
             .catch(error => {
-                document.getElementById('error').textContent = error.message;
-                document.getElementById('error').style.display = 'block';
+                let userMessage;
+                if (error.message.includes('429') || error.message.includes('too busy') || error.message.includes('overloaded')) {
+                    userMessage = "The AI service is currently very busy. Please wait a minute or two and try again. 🤖✨";
+                } else {
+                    userMessage = error.message;
+                }
+                
+                const errorDiv = document.getElementById('error');
+                errorDiv.textContent = userMessage;
+                errorDiv.style.display = 'block';
+                errorDiv.style.padding = '10px';
+                errorDiv.style.backgroundColor = '#fff3cd';
+                errorDiv.style.border = '1px solid #ffeeba';
+                errorDiv.style.borderRadius = '4px';
+                errorDiv.style.color = '#856404';
+                
+                console.error('Full error:', error);
             })
             .finally(() => {
                 document.getElementById('loading').style.display = 'none';
             });
         }
 
-        function displaySideBySide(patches, analysis) {
+        function parseDiffChunk(chunkHeader) {
+            // Parse diff header like "@@ -1,3 +1,3 @@"
+            const match = chunkHeader.match(/@@ -\d+(?:,\d+)? \+(\d+)(?:,\d+)? @@/);
+            if (!match) return null;
+            return parseInt(match[1]); // Return the starting line number
+        }
+
+        function displaySideBySide(patches, analysisResponse) {
             const resultsDiv = document.getElementById('results');
             resultsDiv.innerHTML = '';
-            
-            // Create main panels
-            const codePanel = document.createElement('div');
-            codePanel.className = 'code-panel';
-            
-            const analysisPanel = document.createElement('div');
-            analysisPanel.className = 'analysis-panel';
-            
-            patches.forEach(patch => {
-                // Add file header
-                const fileHeader = document.createElement('div');
-                fileHeader.className = 'file-header';
-                fileHeader.textContent = patch.filename;
-                codePanel.appendChild(fileHeader);
+            resultsDiv.className = 'results-container';
+
+            try {
+                console.log('Raw analysis response:',typeof analysisResponse, analysisResponse);
+
+                // Extract summary and JSON parts
+                let summary = '', endSummary = '', analysisArray = [];
                 
-                const codeSection = document.createElement('div');
-                codeSection.className = 'code-section';
-                
-                // Split patch into lines
-                const lines = patch.content.split('\n');
-                let lineNo = 1;
-                lines.forEach(line => {
-                    const codeLine = document.createElement('div');
-                    codeLine.className = 'code-line';
-                    
-                    if (line.startsWith('+')) {
-                        codeLine.className += ' line-addition';
-                    } else if (line.startsWith('-')) {
-                        codeLine.className += ' line-deletion';
-                    } else {
-                        codeLine.className += ' line-neutral';
+                if (typeof analysisResponse === 'string') {
+                    // Handle string response
+                    const parts = analysisResponse.split('[');
+                    console.log('Parts:', parts);
+                    if (parts.length >= 2) {
+                        summary = parts[0].trim();
+                        const jsonPart = '[' + parts[1];
+                        const jsonEndIndex = jsonPart.lastIndexOf(']');
+                        console.log('JSON end index:', jsonEndIndex);
+                        if (jsonEndIndex === -1) {
+                            throw new Error('Could not find end of JSON array');
+                        }
+                        endSummary = jsonPart.slice(jsonEndIndex + 1).trim();
+                        console.log('End summary:', endSummary);
+                        const rawAnalysisArray = jsonPart.slice(0, jsonEndIndex + 1);
+                        console.log('Excuse me:', rawAnalysisArray);
+                        analysisArray = JSON.parse(rawAnalysisArray);
+                        console.log('Parsed JSON:', analysisArray);
                     }
-                    
-                    const lineNumber = document.createElement('span');
-                    lineNumber.className = 'line-number';
-                    lineNumber.textContent = lineNo++;
-                    
-                    const lineContent = document.createElement('span');
-                    lineContent.className = 'code-line-content';
-                    lineContent.textContent = line;
-                    
-                    codeLine.appendChild(lineNumber);
-                    codeLine.appendChild(lineContent);
-                    codeSection.appendChild(codeLine);
-                });
-                
-                codePanel.appendChild(codeSection);
-            });
-            
-            // Add full analysis response
-            const analysisContent = document.createElement('div');
-            analysisContent.className = 'analysis-content';
-            const analysisText = analysis.map(line => line.content).join('\n');
-            
-            // Split analysis into sections based on double newlines
-            const sections = analysisText.split('\n\n');
-            sections.forEach(section => {
-                if (section.trim()) {
-                    const sectionDiv = document.createElement('div');
-                    sectionDiv.className = 'analysis-section';
-                    sectionDiv.textContent = section;
-                    analysisPanel.appendChild(sectionDiv);
+                } else {
+                    // Handle direct JSON response
+                    analysisArray = analysisResponse;
                 }
-            });
-            
-            // Add both panels to the results
-            resultsDiv.appendChild(codePanel);
-            resultsDiv.appendChild(analysisPanel);
-        }
-        
-        function escapeHtml(unsafe) {
-            return unsafe
-                .replace(/&/g, "&amp;")
-                .replace(/</g, "&lt;")
-                .replace(/>/g, "&gt;")
-                .replace(/"/g, "&quot;")
-                .replace(/'/g, "&#039;");
+
+                console.log('Parsed data:', {
+                    summary,
+                    analysisArray,
+                    endSummary
+                });
+
+                // Display summaries if present
+                if (summary || endSummary) {
+                    if (summary) {
+                        const summaryDiv = document.createElement('div');
+                        summaryDiv.className = 'summary-box';
+                        summaryDiv.textContent = summary;
+                        resultsDiv.appendChild(summaryDiv);
+                    }
+
+                    if (endSummary) {
+                        const endSummaryDiv = document.createElement('div');
+                        endSummaryDiv.className = 'summary-box';
+                        endSummaryDiv.textContent = endSummary;
+                        resultsDiv.appendChild(endSummaryDiv);
+                    }
+                }
+
+                // Group messages by file and line
+                const messagesByFile = {};
+                analysisArray.forEach(item => {
+                    const [file, line] = item.location.split(':');
+                    if (!messagesByFile[file]) {
+                        messagesByFile[file] = {};
+                    }
+                    if (!messagesByFile[file][line]) {
+                        messagesByFile[file][line] = [];
+                    }
+                    messagesByFile[file][line].push(item.content);
+                });
+
+                const sideByDiv = document.createElement('div');
+                sideByDiv.className = 'side-by-side';
+                
+                const codePanel = document.createElement('div');
+                codePanel.className = 'code-panel';
+
+                patches.forEach(patch => {
+                    console.log('Processing patch:', patch.filename);
+                    const fileHeader = document.createElement('div');
+                    fileHeader.className = 'file-header';
+                    fileHeader.textContent = patch.filename;
+                    codePanel.appendChild(fileHeader);
+
+                    const codeSection = document.createElement('div');
+                    codeSection.className = 'code-section';
+
+                    // Split content into chunks by diff headers
+                    // const chunks = patch.content.split(/(?=@@)/);
+                    // console.log('Chunks found:', chunks.length);
+                    // console.log('First chunk:', chunks[0]);
+                    
+                    // // First chunk is the git diff header, we can display it separately
+                    // if (chunks[0] && !chunks[0].startsWith('@@')) {
+                    //     console.log(`Processing initial header:`, chunks[0].substring(0, 100));
+                    //     const headerDiv = document.createElement('div');
+                    //     headerDiv.className = 'diff-header';
+                    //     headerDiv.style.padding = '4px 8px';
+                    //     headerDiv.style.color = '#666';
+                    //     headerDiv.style.fontFamily = 'monospace';
+                    //     headerDiv.textContent = chunks[0].trim();
+                    //     codeSection.appendChild(headerDiv);
+                    //     chunks.shift();
+                    // }
+                    // Split content into chunks by diff headers
+                    const chunks = patch.content.split('\n');
+                    console.log('Lines found:', chunks.length);
+
+                    let currentChunk = [];
+                    let inCodeSection = false;
+                    let currentLineNumber = 1;
+
+                    chunks.forEach((line, index) => {
+                        if (line.startsWith('diff --git') || line.startsWith('---') || line.startsWith('+++')) {
+                            // Git headers - display but don't include in code processing
+                            const headerDiv = document.createElement('div');
+                            headerDiv.className = 'diff-header';
+                            headerDiv.style.padding = '4px 8px';
+                            headerDiv.style.color = '#666';
+                            headerDiv.style.fontFamily = 'monospace';
+                            headerDiv.textContent = line;
+                            codeSection.appendChild(headerDiv);
+                        } else if (line.startsWith('@@')) {
+                            // Start of a new code section
+                            console.log('Found chunk header:', line);
+                            inCodeSection = true;
+                            // Parse the starting line number
+                            const match = line.match(/@@ -\d+(?:,\d+)? \+(\d+)(?:,\d+)? @@/);
+                            if (match) {
+                                currentLineNumber = parseInt(match[1]);
+                                console.log('Starting at line:', currentLineNumber);
+                            }
+                            
+                            const headerDiv = document.createElement('div');
+                            headerDiv.className = 'chunk-header';
+                            headerDiv.style.padding = '4px 8px';
+                            headerDiv.style.backgroundColor = '#f0f0f0';
+                            headerDiv.style.color = '#666';
+                            headerDiv.style.fontFamily = 'monospace';
+                            headerDiv.textContent = line;
+                            codeSection.appendChild(headerDiv);
+                        } else if (inCodeSection) {
+                            // Process code lines
+                            console.log('Processing code line:', line);
+                            
+                            const rowDiv = document.createElement('div');
+                            rowDiv.className = 'code-line-row';
+
+                            const codeLineDiv = document.createElement('div');
+                            codeLineDiv.className = 'code-with-line-num code-line';
+                            
+                            if (line.startsWith('+')) {
+                                codeLineDiv.className += ' line-addition';
+                                currentLineNumber++;
+                            } else if (line.startsWith('-')) {
+                                codeLineDiv.className += ' line-deletion';
+                            } else if (!line.startsWith('\\')) {
+                                codeLineDiv.className += ' line-neutral';
+                                currentLineNumber++;
+                            }
+
+                            const lineNumber = document.createElement('span');
+                            lineNumber.className = 'line-number';
+                            lineNumber.textContent = line.startsWith('-') ? '' : (currentLineNumber - 1);
+
+                            const lineContent = document.createElement('span');
+                            lineContent.className = 'code-line-content';
+                            lineContent.textContent = line;
+
+                            codeLineDiv.appendChild(lineNumber);
+                            codeLineDiv.appendChild(lineContent);
+                            rowDiv.appendChild(codeLineDiv);
+
+                            // Add associated message if exists
+                            const fileMessages = messagesByFile[patch.filename] || {};
+                            if (fileMessages[currentLineNumber - 1]) {
+                                rowDiv.classList.add('has-message');
+                                const messageDiv = document.createElement('div');
+                                messageDiv.className = 'line-message';
+                                messageDiv.textContent = fileMessages[currentLineNumber - 1].join('\n\n');
+                                rowDiv.appendChild(messageDiv);
+                            }
+
+                            codeSection.appendChild(rowDiv);
+                        }
+                    });
+                    codePanel.appendChild(codeSection);
+                });
+                sideByDiv.appendChild(codePanel);
+                resultsDiv.appendChild(sideByDiv);
+
+            } catch (error) {
+                console.error('Error processing analysis:', error);
+                const errorDiv = document.createElement('div');
+                errorDiv.className = 'error';
+                errorDiv.style.display = 'block';
+                errorDiv.textContent = 'Error processing analysis: ' + error.message;
+                resultsDiv.appendChild(errorDiv);
+            }
         }
     </script>
 </body>
