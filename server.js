@@ -67,61 +67,20 @@ Focus specifically on error handling and form validation accessibility. Check fo
 - Recovery suggestions
 
 In your response, provide a JSON object the location is string pattern "filename.path:linenumber"
-for instance "my-function.js:67" and the a11y message is in the content. The full JSON object will look like
+for instance "my-function.js:67" and the a11y message is in the content. The full JSON object will look like. It needs to be wrapped in the exact tags <a11yreviewdata> like so:
 
+<a11yreviewdata>
 [
   {
     location: "src/DisabledButton.jsx:2",
     content: "Using CSS opacity and pointerEvents to visually disable a button is problematic. It makes the button appear non-interactive to sighted users, but it's still focusable and operable via keyboard or screen reader. This fails WCAG 2.1.1 Keyboard. To fix, add the disabled attribute to truly disable the button: <button type=\\"submit\\" disabled={isLoading}>."
   },
 ]
+</a11yreviewdata>
   
 It's very important that you place all explanation at the beginning of the file, include code examples that correspond to a specific bug with the line of code that the error is about, and end the message with the analysis JSON.
 
 `
-const fakeResponse = `Here are the accessibility issues I identified in the provided code changes:
-
-Explanation:
-The DisabledButton component uses CSS opacity and pointerEvents to visually disable the button when isLoading is true. This is problematic because it makes the button appear non-interactive to sighted users, but it's still focusable and operable via keyboard or screen reader. It fails WCAG 2.1.1 Keyboard criteria.
-
-The Modal component traps keyboard focus inside the modal when opened. However, it doesn't provide a way to close the modal using the keyboard, violating WCAG 2.1.2 No Keyboard Trap. The close button should be focusable and operable with the keyboard.
-
-The Form component has multiple accessibility issues:
-1. The input fields are missing associated labels, failing WCAG 1.3.1 Info and Relationships and 2.4.6 Headings and Labels.
-2. The name error message is hidden using display: none, making it inaccessible to screen readers. It should use techniques like aria-live or role="alert" to announce the error.
-3. The email field is missing an error message and indicator for invalid input.
-4. The form is missing a submit button, and instead uses an onClick handler on a regular button. This fails WCAG 3.2.2 On Input as the form won't be submittable using the Enter key.
-
-Here are the specific issues with suggested fixes:
-
-[
-  {
-    "location": "src/DisabledButton.jsx:3",
-    "content": "Using CSS opacity and pointerEvents to visually disable a button is problematic. It makes the button appear non-interactive to sighted users, but it's still focusable and operable via keyboard or screen reader. This fails WCAG 2.1.1 Keyboard. To fix, add the disabled attribute to truly disable the button: <button type="submit" disabled={isLoading}>."
-  },
-  {
-    "location": "src/Modal.jsx:16",
-    "content": "The modal close button is not keyboard accessible, violating WCAG 2.1.2 No Keyboard Trap. To fix, make the close button focusable and operable with the keyboard, for example: <button type=\"button\" onClick={() => isOpen(false)}>×</button>."
-  },
-  {
-    "location": "src/Form.jsx:4",
-    "content": "The name input is missing a programmatically associated label, failing WCAG 1.3.1 Info and Relationships and 2.4.6 Headings and Labels. To fix, add a <label> with a for attribute referencing the input's id: <label for=\"name\">Name</label> <input type=\"text\" id=\"name\" />."
-  },
-  {
-    "location": "src/Form.jsx:7",
-    "content": "The name error message is hidden with display:none, making it permanently inaccessible to screen readers. Use aria-live or role=\"alert\" to announce the error when it appears. For example: <div aria-live=\"assertive\" style={{color: 'red'}}>Name is required</div>."
-  },
-  {
-    "location": "src/Form.jsx:11",
-    "content": "The email input is missing an error message for invalid input. Add a conditional error similar to the name field to indicate when the entered email is invalid."
-  },
-  {
-    "location": "src/Form.jsx:13",
-    "content": "The form uses an onClick handler on a button instead of an onSubmit handler on the <form>. This fails WCAG 3.2.2 On Input as the form is not submittable via keyboard by pressing Enter. To fix, use a submit button: <button type=\"submit\">Send</button> and handle the submit event on the form."
-  }
-]
-
-Let me know if you have any other questions!`
 // Load prompt when server starts
 // loadPrompt('accessibility-prompt.txt')
 //   .then(prompt => {
