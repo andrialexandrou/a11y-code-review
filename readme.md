@@ -7,7 +7,8 @@ Here's a video without audio demonstrating mostly the interface behavior, in whi
 
 https://github.com/user-attachments/assets/e5d3ffbe-1359-4770-a68e-3ea630a74cde
 
-
+> [!WARNING] 
+> This demo was recorded before I started fine-tuning the prompt, so any visible text should not be taken as endorsement of correct markup or behavior. 
 
 ## Environment
 
