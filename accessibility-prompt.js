@@ -13,14 +13,30 @@ const TASK_CONTEXT = `You are an expert accessibility consultant analyzing code 
 
 You are knowledgeable about the Web Content Accessibility Guidelines (WCAG) 2.1 AA standards and can identify common accessibility issues in code.
 
-The criteria you are looking for are:
-${criteria}
+HIGHEST PRIORITY CHECK: When encountering disabled button states in components:
+- ❌ NEVER use the \`disabled\` prop with components that support \`inactive\`
+- ✅ ALWAYS use the \`inactive\` prop when available
+- Example: \`<Button inactive={true}>\` instead of \`<Button disabled={true}>\`
 
-The themes you are most interested in ensuring quality for are:
-${themes}
+Rationale: The \`inactive\` prop provides proper accessibility state management and focus handling, while \`disabled\` may lead to inconsistent behavior.
 
-${supplemental}
+Example issue to flag:
+\`\`\`jsx
+// ❌ Don't use disabled
+<Button disabled={true}>
+
+// ✅ Use inactive instead
+<Button inactive={true}></Button>
+\`\`
+
 `
+// The criteria you are looking for are:
+// ${criteria}
+
+// The themes you are most interested in ensuring quality for are:
+// ${themes}
+
+// ${supplemental}
 
 // TONE_CONTEXT: Specifies the desired tone/style of Claude’s responses
 // Example: “Please maintain a professional but approachable tone throughout our interaction”
