@@ -376,32 +376,48 @@ diff --git a/src/Button.js b/src/Button.js
             try {
                 // Extract summary and JSON parts
                 let summary = '', endSummary = '', analysisArray = [];
+                
+                console.log('Raw analysis response:', analysisResponse);
 
                 if (typeof analysisResponse === 'string') {
-                    // Handle string response
-                    const reviewMatch = analysisResponse.match(/<a11yreviewdata>(.*?)<\/a11yreviewdata>/s);
-                    if (reviewMatch) {
-                        // Get text before the review data tag
-                        summary = analysisResponse.substring(0, reviewMatch.index).trim();
+                    // Look for all review data sections
+                    const reviewMatches = analysisResponse.match(/<a11yreviewdata>([\s\S]*?)<\/a11yreviewdata>/g);
+                    
+                    if (reviewMatches) {
+                        // Combine all review data sections
+                        analysisArray = reviewMatches.reduce((acc, match) => {
+                            const content = match.match(/<a11yreviewdata>([\s\S]*?)<\/a11yreviewdata>/)[1];
+                            try {
+                                const parsed = JSON.parse(content);
+                                return acc.concat(parsed);
+                            } catch (e) {
+                                console.error('Failed to parse review data section:', e);
+                                return acc;
+                            }
+                        }, []);
                         
-                        // Get text after the review data tag
-                        endSummary = analysisResponse.substring(reviewMatch.index + reviewMatch[0].length).trim();
-                        console.log('reviewMatch:', reviewMatch);
-                        // Parse the JSON from inside the tag
-                        try {
-                            analysisArray = JSON.parse(reviewMatch[1]);
-                            console.log('Parsed review data:', analysisArray);
-                        } catch (e) {
-                            console.error('Failed to parse review data:', e);
-                            throw new Error('Failed to parse accessibility review data');
+                        // Get text between review data sections as summaries
+                        const parts = analysisResponse.split(/<a11yreviewdata>[\s\S]*?<\/a11yreviewdata>/);
+                        summary = parts[0].trim();
+                        if (parts.length > 1) {
+                            endSummary = parts[parts.length - 1].trim();
                         }
                     } else {
-                        throw new Error('Could not find accessibility review data');
+                        // If no review data tags found, try parsing as pure JSON
+                        try {
+                            analysisArray = JSON.parse(analysisResponse);
+                        } catch (e) {
+                            // If not JSON, treat as plain text summary
+                            summary = analysisResponse;
+                        }
                     }
-                } else {
-                    // Handle direct JSON response
+                } else if (typeof analysisResponse === 'object') {
                     analysisArray = analysisResponse;
                 }
+
+                console.log('Parsed analysis array:', analysisArray);
+                console.log('Summary:', summary);
+                console.log('End Summary:', endSummary);
 
                 // Display summaries if present
                 if (summary || endSummary) {
@@ -423,14 +439,18 @@ diff --git a/src/Button.js b/src/Button.js
                 // Group messages by file and line
                 const messagesByFile = {};
                 analysisArray.forEach(item => {
-                    const [file, line] = item.location.split(':');
-                    if (!messagesByFile[file]) {
-                        messagesByFile[file] = {};
+                    // Only process if we have a valid location
+                    if (item.location && item.location.includes(':')) {
+                        const [file, line] = item.location.split(':');
+                        if (!messagesByFile[file]) {
+                            messagesByFile[file] = new Map(); // Use Map to ensure unique messages per line
+                        }
+                        const lineNum = parseInt(line);
+                        if (!messagesByFile[file].has(lineNum)) {
+                            messagesByFile[file].set(lineNum, new Set()); // Use Set for unique messages
+                        }
+                        messagesByFile[file].get(lineNum).add(item.content);
                     }
-                    if (!messagesByFile[file][line]) {
-                        messagesByFile[file][line] = [];
-                    }
-                    messagesByFile[file][line].push(item.content);
                 });
 
                 const sideByDiv = document.createElement('div');
@@ -505,13 +525,15 @@ diff --git a/src/Button.js b/src/Button.js
                             codeLineDiv.appendChild(lineContent);
                             rowDiv.appendChild(codeLineDiv);
 
-                            // Add associated message if exists
-                            const fileMessages = messagesByFile[patch.filename] || {};
-                            if (fileMessages[currentLineNumber]) {
-                                const messageDiv = document.createElement('div');
-                                messageDiv.className = 'line-message';
-                                messageDiv.textContent = fileMessages[currentLineNumber].join('\n\n');
-                                rowDiv.appendChild(messageDiv);
+                            // Only show messages on added lines, not on removed lines
+                            if (!line.startsWith('-')) {
+                                const fileMessages = messagesByFile[patch.filename];
+                                if (fileMessages && fileMessages.has(currentLineNumber)) {
+                                    const messageDiv = document.createElement('div');
+                                    messageDiv.className = 'line-message';
+                                    messageDiv.textContent = Array.from(fileMessages.get(currentLineNumber)).join('\n\n');
+                                    rowDiv.appendChild(messageDiv);
+                                }
                             }
 
                             codeSection.appendChild(rowDiv);

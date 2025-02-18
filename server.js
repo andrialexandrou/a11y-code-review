@@ -56,7 +56,8 @@ const formatPatches = (patches) => {
 
 // Helper function to extract line numbers and messages
 const processResponse = (response) => {
-  return response
+  // Return the raw response text from Claude
+  return response;
 };
 
 // Accessibility-focused endpoint
@@ -100,7 +101,8 @@ app.post('/analyze-patches/accessibility', async (req, res) => {
         system: systemPrompt
       });
       console.log('Received response from Claude API');
-  
+
+      // Update how we get the response content
       const processedResponse = processResponse(message.content[0].text);
       console.log('Processed response into\n', processedResponse);
   
